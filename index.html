@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Snap Prompter</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -23,12 +23,13 @@
       <p class="sub">Paste your script or import a file. Get ready to shoot clean, readable videos with snap controls!</p>
       <p class="sub" id="secureWarning" style="display:none; color:#e0245e;"></p>
       
-      <textarea id="scriptInput" placeholder="Type or paste your script here..."></textarea>
+      <!-- Enable native context menus/pasting explicitly -->
+      <textarea id="scriptInput" placeholder="Type or paste your script here..." spellcheck="true"></textarea>
       
       <div class="setup-row">
         <button id="importBtn" class="btn-snap-secondary">
           <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-          Import Document
+          Import
         </button>
         <input type="file" id="fileInput" accept=".txt,.docx,.pdf" style="display:none;">
         <span id="importStatus"></span>
@@ -69,15 +70,17 @@
       </div>
     </div>
 
-    <!-- Nudge Side Controls -->
-    <button id="nudgeBack" class="side-btn" title="Nudge Up">
-      <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
-    </button>
-    <button id="nudgeFwd" class="side-btn" title="Nudge Down">
-      <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
-    </button>
+    <!-- Combined Speed Controls (Stacked on Right Side) -->
+    <div class="speed-control-stack">
+      <button id="speedUpBtn" class="side-btn" title="Increase Speed">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      </button>
+      <button id="speedDownBtn" class="side-btn" title="Decrease Speed">
+        <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+      </button>
+    </div>
 
-    <!-- Top Camera Header Overlay -->
+    <!-- Top Camera Header Overlay (Camera Flip Removed) -->
     <div id="topHeader">
       <button id="backBtn" class="circle-btn" title="Edit Script">
         <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -88,9 +91,6 @@
       <div class="header-actions">
         <button id="flashBtn" class="circle-btn" title="Screen Flash">
           <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-        </button>
-        <button id="flipBtn" class="circle-btn" title="Flip Camera">
-          <svg viewBox="0 0 24 24"><path d="M9.37 5.51A7 7 0 004 12h3l-4 4-4-4h3a9 9 0 0114.82-6.5l-1.45 1.01zM14.63 18.49A7 7 0 0020 12h-3l4-4 4 4h-3a9 9 0 01-14.82 6.5l1.45-1.01z"/></svg>
         </button>
       </div>
     </div>
@@ -110,7 +110,7 @@
           <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
         </button>
 
-        <!-- SNAPCHAT RECORD BUTTON AREA -->
+        <!-- RECORD BUTTON AREA -->
         <div class="record-wrapper">
           <button id="pauseRecBtn" class="circle-btn pause-rec-btn" title="Pause/Resume Rec" style="display:none;">
             <svg id="pauseRecIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>

@@ -1,5 +1,4 @@
 (function () {
-  // ---------- State Variables ----------
   let expectedWords = [];
   let lines = [];
   let wordSpans = [];
@@ -22,9 +21,7 @@
   let recordElapsedMs = 0;
   let lastTimerTick = null;
   let currentTakeUrl = null;
-  let currentFacingMode = 'user';
 
-  // ---------- DOM Elements ----------
   const setupEl = document.getElementById('setup');
   const stageEl = document.getElementById('stage');
   const reviewEl = document.getElementById('review');
@@ -33,13 +30,13 @@
   const textFlow = document.getElementById('textFlow');
   const scrollWrap = document.getElementById('scrollWrap');
   const viewport = document.getElementById('viewport');
+  const guide = document.getElementById('guide');
   const camera = document.getElementById('camera');
   const noCameraMsg = document.getElementById('noCameraMsg');
   const controls = document.getElementById('controls');
   const showBarBtn = document.getElementById('showBarBtn');
   const fileInput = document.getElementById('fileInput');
   const importStatus = document.getElementById('importStatus');
-  const secureWarning = document.getElementById('secureWarning');
   const countdownEl = document.getElementById('countdown');
   const recBadge = document.getElementById('recBadge');
   const recTime = document.getElementById('recTime');
@@ -49,17 +46,11 @@
   const pauseRecIcon = document.getElementById('pauseRecIcon');
   const mirrorBtn = document.getElementById('mirrorBtn');
   const flashBtn = document.getElementById('flashBtn');
-  const flipBtn = document.getElementById('flipBtn');
+  const speedSlider = document.getElementById('speedSlider');
+  const speedUpBtn = document.getElementById('speedUpBtn');
+  const speedDownBtn = document.getElementById('speedDownBtn');
   const flashOverlay = document.getElementById('flashOverlay');
 
-  if (!window.isSecureContext) {
-    secureWarning.style.display = 'block';
-    secureWarning.textContent = location.protocol === 'file:'
-      ? '⚠ Camera/mic needs HTTPS or local server to record.'
-      : '⚠ Security notice: Camera access requires HTTPS.';
-  }
-
-  // ---------- Script Logic ----------
   function loadScript(text) {
     expectedWords = text.split(/\s+/).filter(Boolean);
     textFlow.innerHTML = expectedWords.map((w, i) =>
@@ -77,7 +68,6 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // ---------- Geometry & Scrolling ----------
   function computeGeometry() {
     if (!wordSpans.length) return;
     const vh = viewport.clientHeight;
@@ -130,7 +120,18 @@
     applyScroll();
   }
 
-  // ---------- Play / Pause Loop ----------
+  // Shift Viewport to top 10% on scroll play
+  function setViewportPosition(scrolling) {
+    if (scrolling) {
+      viewport.classList.add('scrolling');
+      guide.classList.add('scrolling');
+    } else {
+      viewport.classList.remove('scrolling');
+      guide.classList.remove('scrolling');
+    }
+    setTimeout(computeGeometry, 400);
+  }
+
   function tick(ts) {
     if (!playing) return;
     if (lastFrameTime === null) lastFrameTime = ts;
@@ -146,6 +147,7 @@
     if (playing) return;
     playing = true;
     lastFrameTime = null;
+    setViewportPosition(true);
     rafId = requestAnimationFrame(tick);
     updatePlayBtn();
   }
@@ -153,6 +155,7 @@
   function pause() {
     playing = false;
     if (rafId) cancelAnimationFrame(rafId);
+    setViewportPosition(false);
     updatePlayBtn();
   }
 
@@ -164,14 +167,17 @@
       : `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
   }
 
-  function nudge(px) {
-    pause();
-    scrollOffset = Math.min(maxScroll, Math.max(0, scrollOffset + px));
-    applyScroll();
-  }
-
-  document.getElementById('nudgeBack').addEventListener('click', () => nudge(-parseFloat(getComputedStyle(textFlow).fontSize) * 2.2));
-  document.getElementById('nudgeFwd').addEventListener('click', () => nudge(parseFloat(getComputedStyle(textFlow).fontSize) * 2.2));
+  // Adjust Speed Controls
+  speedUpBtn.addEventListener('click', () => {
+    wpm = Math.min(220, wpm + 10);
+    speedSlider.value = wpm;
+    updateSpeed();
+  });
+  speedDownBtn.addEventListener('click', () => {
+    wpm = Math.max(70, wpm - 10);
+    speedSlider.value = wpm;
+    updateSpeed();
+  });
 
   // Drag Scroll
   let dragging = false, dragStartY = 0, dragStartScroll = 0, wasPlaying = false;
@@ -191,8 +197,7 @@
     if (wasPlaying) play();
   });
 
-  // ---------- Sliders ----------
-  document.getElementById('speedSlider').addEventListener('input', (e) => {
+  speedSlider.addEventListener('input', (e) => {
     wpm = parseInt(e.target.value, 10); updateSpeed();
   });
   document.getElementById('fontSlider').addEventListener('input', (e) => {
@@ -205,7 +210,6 @@
   });
   window.addEventListener('resize', () => requestAnimationFrame(computeGeometry));
 
-  // ---------- Action Controls ----------
   playBtn.addEventListener('click', togglePlay);
   mirrorBtn.addEventListener('click', () => {
     camera.classList.toggle('mirrored');
@@ -214,10 +218,6 @@
   flashBtn.addEventListener('click', () => {
     flashOverlay.classList.toggle('active');
     flashBtn.classList.toggle('on');
-  });
-  flipBtn.addEventListener('click', () => {
-    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-    startCamera();
   });
 
   document.getElementById('fsBtn').addEventListener('click', () => {
@@ -233,36 +233,41 @@
   showBarBtn.addEventListener('click', () => {
     controls.classList.remove('hidden-bar'); stageEl.classList.remove('bars-hidden');
   });
+
+  // Return to Edit
   document.getElementById('backBtn').addEventListener('click', () => {
-    pause(); stopCameraTracks();
+    resetState();
+    stopCameraTracks();
     stageEl.classList.remove('active');
     setupEl.style.display = 'flex';
   });
   document.getElementById('reviewEditBtn').addEventListener('click', () => {
+    resetState();
     reviewEl.classList.remove('active');
     setupEl.style.display = 'flex';
   });
-  document.getElementById('retakeBtn').addEventListener('click', () => {
+
+  // Retake Fix (Clears states, resets streams, rebuilds scrolling)
+  document.getElementById('retakeBtn').addEventListener('click', async () => {
+    resetState();
     reviewEl.classList.remove('active');
     stageEl.classList.add('active');
-    scrollOffset = 0; applyScroll();
+    await startCamera();
+    requestAnimationFrame(computeGeometry);
   });
 
-  // Hotkeys
-  window.addEventListener('keydown', (e) => {
-    if (!stageEl.classList.contains('active')) return;
-    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-    else if (e.code === 'ArrowUp') { nudge(parseFloat(getComputedStyle(textFlow).fontSize) * 2.2); }
-    else if (e.code === 'ArrowDown') { nudge(-parseFloat(getComputedStyle(textFlow).fontSize) * 2.2); }
-    else if (e.key.toLowerCase() === 'r') { recordBtn.click(); }
-  });
+  function resetState() {
+    pause();
+    if (recording) stopRecording();
+    scrollOffset = 0;
+    applyScroll();
+  }
 
-  // ---------- Camera Setup ----------
   async function startCamera() {
     stopCameraTracks();
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: true
       });
       camera.srcObject = mediaStream;
@@ -283,7 +288,6 @@
     camera.classList.remove('on');
   }
 
-  // ---------- Recording Logic ----------
   function pickMimeType() {
     const candidates = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
     for (const c of candidates) {
@@ -367,10 +371,10 @@
   }
 
   function onRecordingStop() {
-    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+    const blob = new Blob(recordedChunks, { type: mediaRecorder ? mediaRecorder.mimeType : 'video/webm' });
     if (currentTakeUrl) URL.revokeObjectURL(currentTakeUrl);
     currentTakeUrl = URL.createObjectURL(blob);
-    const ext = (mediaRecorder.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+    const ext = (mediaRecorder && mediaRecorder.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
     document.getElementById('reviewVideo').src = currentTakeUrl;
     const dl = document.getElementById('downloadBtn');
     dl.href = currentTakeUrl;
@@ -391,7 +395,6 @@
 
   pauseRecBtn.addEventListener('click', pauseRecording);
 
-  // ---------- Document Import ----------
   document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
@@ -400,9 +403,8 @@
     try {
       const ext = file.name.split('.').pop().toLowerCase();
       let text = '';
-      if (ext === 'txt') {
-        text = await file.text();
-      } else if (ext === 'docx') {
+      if (ext === 'txt') { text = await file.text(); }
+      else if (ext === 'docx') {
         const buf = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer: buf });
         text = result.value;
@@ -425,7 +427,6 @@
     }
   });
 
-  // ---------- Launch Stage ----------
   startBtn.addEventListener('click', async () => {
     const text = scriptInput.value.trim();
     if (!text) return;

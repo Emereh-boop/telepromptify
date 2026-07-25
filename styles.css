@@ -1,26 +1,22 @@
 :root {
   --snap-yellow: #FFFC00;
-  --snap-yellow-hover: #f0ec00;
   --snap-black: #000000;
   --snap-white: #FFFFFF;
   --snap-gray-bg: #f7f7f8;
-  --snap-gray-card: rgba(255, 255, 255, 0.85);
+  --snap-gray-card: rgba(255, 255, 255, 0.88);
   --snap-gray-border: rgba(0, 0, 0, 0.08);
   --snap-text: #161823;
   --snap-text-dim: #8a8b91;
   --font-size: 46px;
   --margin-pct: 10%;
   --line-height: 1.4;
-  --viewport-h: 46vh;
 }
 
 * {
   box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -31,7 +27,6 @@ body {
   overflow: hidden;
 }
 
-/* Flash Light Overlay */
 #flashOverlay {
   position: fixed;
   inset: 0;
@@ -41,12 +36,8 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease;
 }
+#flashOverlay.active { opacity: 1; }
 
-#flashOverlay.active {
-  opacity: 1;
-}
-
-/* Base Card UI */
 .card {
   width: min(600px, 90vw);
   background: var(--snap-white);
@@ -58,529 +49,193 @@ body {
   gap: 16px;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.header { display: flex; align-items: center; gap: 10px; }
 .snap-logo {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   fill: var(--snap-yellow);
   background: var(--snap-black);
-  border-radius: 50%;
-  padding: 6px;
+  border-radius: 50%; padding: 6px;
 }
+h1 { font-size: 22px; font-weight: 800; margin: 0; }
+p.sub { margin: 0; color: var(--snap-text-dim); font-size: 14px; line-height: 1.4; }
 
-h1 {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0;
-}
-
-p.sub {
-  margin: 0;
-  color: var(--snap-text-dim);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-/* ---------- Setup Screen ---------- */
+/* Setup Input (Allow Native Text Selection/Paste) */
 #setup {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0f2f5;
-  z-index: 50;
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #f0f2f5; z-index: 50;
 }
-
 #scriptInput {
-  width: 100%;
-  height: 200px;
+  width: 100%; height: 200px;
   resize: none;
   background: var(--snap-gray-bg);
   color: var(--snap-text);
   border: 2px solid transparent;
   border-radius: 16px;
   padding: 16px;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 15px; line-height: 1.5;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  touch-action: auto !important;
 }
+#scriptInput:focus { outline: none; border-color: var(--snap-yellow); }
 
-#scriptInput:focus {
-  outline: none;
-  border-color: var(--snap-yellow);
-}
+.setup-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-.setup-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* Snap Buttons */
 .btn-snap-primary {
   background: var(--snap-yellow);
   color: var(--snap-black);
-  border: none;
-  border-radius: 30px;
+  border: none; border-radius: 30px;
   padding: 12px 28px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 15px; font-weight: 700;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   box-shadow: 0 4px 12px rgba(255, 252, 0, 0.4);
-  transition: transform 0.1s ease, background 0.2s ease;
 }
-
-.btn-snap-primary:active {
-  transform: scale(0.96);
-}
-
 .btn-snap-secondary {
   background: var(--snap-gray-bg);
   color: var(--snap-text);
-  border: none;
-  border-radius: 30px;
+  border: none; border-radius: 30px;
   padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14px; font-weight: 600;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
+.btn-snap-secondary svg { width: 18px; height: 18px; fill: currentColor; }
 
-.btn-snap-secondary svg {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
-}
+/* Stage */
+#stage { position: fixed; inset: 0; display: none; background: #000; }
+#stage.active { display: block; }
 
-/* ---------- Stage / Camera Screen ---------- */
-#stage {
-  position: fixed;
-  inset: 0;
-  display: none;
-  background: #000;
-}
-
-#stage.active {
-  display: block;
-}
-
-#camera {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: none;
-}
-
-#camera.on {
-  display: block;
-}
-
-#camera.mirrored {
-  transform: scaleX(-1);
-}
+#camera { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+#camera.on { display: block; }
+#camera.mirrored { transform: scaleX(-1); }
 
 #noCameraMsg {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 15px;
-  text-align: center;
-  padding: 40px;
-  background: #111;
+  position: absolute; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  color: #fff; font-size: 15px; text-align: center;
+  padding: 40px; background: #111;
 }
 
-#dimOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.0);
-  /* backdrop-filter: blur(0px); */
-  pointer-events: none;
-}
+#dimOverlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.45); pointer-events: none; }
 
-/* Teleprompter Text Viewport */
+/* Dynamic Viewport (Transitions to top 10% on scroll play) */
 #guide {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 2px;
-  background: rgba(0, 0, 0, 0.15);
-  pointer-events: none;
-  z-index: 5;
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 2px; background: rgba(0, 0, 0, 0.15); pointer-events: none; z-index: 5;
+  transition: top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
+#guide.scrolling { top: 10%; }
 
 #viewport {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 10%;
+  position: absolute; left: 0; right: 0; top: 50%;
   transform: translateY(-50%);
-  height: var(--viewport-h);
+  height: 46vh;
   overflow: hidden;
   padding: 0 var(--margin-pct);
-  touch-action: none;
-  cursor: grab;
-  z-index: 4;
+  touch-action: none; cursor: grab; z-index: 4;
+  transition: top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
+#viewport.scrolling { top: 10%; transform: translateY(0); }
 
-#scrollWrap {
-  will-change: transform;
-}
-
+#scrollWrap { will-change: transform; }
 #textFlow {
   font-size: var(--font-size);
   line-height: var(--line-height);
-  font-weight: 600;
-  text-align: center;
-  color: #000;
-  /* text-shadow: 0 2px 10px rgba(255, 255, 255, 0.8); */
+  font-weight: 800;
+  text-align: center; color: #000;
+  text-shadow: 0 2px 10px rgba(255,255,255,0.8);
 }
+.word { transition: color 0.2s ease, opacity 0.2s ease; }
+.word.past { color: #888; opacity: 0.4; }
+.word.now { color: #000; text-decoration: underline var(--snap-yellow) 4px; }
 
-.word {
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.word.past {
-  color: #888;
-  opacity: 0.4;
-}
-
-.word.now {
-  color: #000;
-  text-decoration: underline var(--snap-yellow) 4px;
-}
-
-/* Top Floating Header overlay */
+/* Top Header */
 #topHeader {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 20;
+  position: absolute; top: 16px; left: 16px; right: 16px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 20;
 }
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
+.header-actions { display: flex; gap: 10px; }
 
 .circle-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--snap-gray-card);
-  border: 1px solid var(--snap-gray-border);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-  transition: transform 0.1s ease, background 0.2s ease;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--snap-gray-card); border: 1px solid var(--snap-gray-border);
+  backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
+.circle-btn svg { width: 22px; height: 22px; fill: var(--snap-text); }
+.circle-btn.on { background: var(--snap-yellow); }
 
-.circle-btn:active {
-  transform: scale(0.92);
-}
-
-.circle-btn svg {
-  width: 22px;
-  height: 22px;
-  fill: var(--snap-text);
-}
-
-.circle-btn.on {
-  background: var(--snap-yellow);
-}
-
-/* Rec Indicator Badge */
 #recBadge {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  background: var(--snap-gray-card);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  display: none; align-items: center; gap: 8px;
+  background: var(--snap-gray-card); backdrop-filter: blur(10px);
+  border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 700;
 }
+#recBadge.show { display: flex; }
+#recBadge .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff3b30; animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-#recBadge.show {
-  display: flex;
+/* Stacked Speed Control Buttons on Right Side */
+.speed-control-stack {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 12px; z-index: 11;
 }
-
-#recBadge .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ff3b30;
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* Side Nudge Buttons */
 .side-btn {
-  position: absolute;
-  z-index: 11;
-  background: var(--snap-gray-card);
-  border: 1px solid var(--snap-gray-border);
-  backdrop-filter: blur(10px);
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: var(--snap-gray-card); border: 1px solid var(--snap-gray-border);
+  backdrop-filter: blur(10px); border-radius: 50%; width: 44px; height: 44px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-
-.side-btn svg {
-  width: 24px;
-  height: 24px;
-  fill: var(--snap-text);
-}
-
-#nudgeBack {
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-#nudgeFwd {
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-}
+.side-btn svg { width: 22px; height: 22px; fill: var(--snap-text); }
 
 /* Countdown */
 #countdown {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 40;
-  font-size: 120px;
-  font-weight: 900;
-  color: var(--snap-black);
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.6); backdrop-filter: blur(4px); z-index: 40;
+  font-size: 120px; font-weight: 900; color: var(--snap-black);
 }
-
-#countdown.show {
-  display: flex;
-}
+#countdown.show { display: flex; }
 
 /* Bottom Control Panel */
 #controls {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 16px;
-  background: var(--snap-gray-card);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--snap-gray-border);
-  border-radius: 32px;
-  padding: 12px 16px;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  position: absolute; left: 12px; right: 12px; bottom: 16px;
+  background: var(--snap-gray-card); backdrop-filter: blur(16px);
+  border: 1px solid var(--snap-gray-border); border-radius: 32px;
+  padding: 12px 16px; z-index: 20; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08); transition: opacity 0.25s ease, transform 0.25s ease;
 }
+#controls.hidden-bar { opacity: 0; transform: translateY(120%); pointer-events: none; }
+.ctrl-row { display: flex; align-items: center; width: 100%; }
+.flex-center { justify-content: space-around; }
 
-#controls.hidden-bar {
-  opacity: 0;
-  transform: translateY(120%);
-  pointer-events: none;
-}
+.icon-btn { background: transparent; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn svg { width: 22px; height: 22px; fill: var(--snap-text); }
 
-.ctrl-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.flex-center {
-  justify-content: space-around;
-}
-
-.icon-btn {
-  background: transparent;
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.icon-btn svg {
-  width: 22px;
-  height: 22px;
-  fill: var(--snap-text);
-}
-
-.icon-btn:active {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-/* Snapchat Camera Shutter Record Button */
-.record-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.record-wrapper { display: flex; align-items: center; gap: 10px; }
 .snap-rec-outer {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  border: 4px solid var(--snap-black);
-  background: transparent;
-  padding: 3px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease, border-color 0.2s ease;
+  width: 68px; height: 68px; border-radius: 50%; border: 4px solid var(--snap-black);
+  background: transparent; padding: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
+.snap-rec-inner { width: 100%; height: 100%; border-radius: 50%; background: var(--snap-black); }
+.snap-rec-outer.recording { border-color: #ff3b30; }
+.snap-rec-outer.recording .snap-rec-inner { background: #ff3b30; border-radius: 8px; transform: scale(0.55); }
+.pause-rec-btn { width: 38px; height: 38px; }
 
-.snap-rec-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: var(--snap-black);
-  transition: transform 0.2s ease, border-radius 0.2s ease, background 0.2s ease;
-}
+.sliders-row { justify-content: space-between; gap: 12px; padding: 0 8px; }
+.ctrl-group { display: flex; align-items: center; gap: 6px; flex: 1; }
+.slider-icon { font-size: 12px; font-weight: bold; color: var(--snap-text-dim); }
+input[type=range] { width: 100%; accent-color: var(--snap-black); height: 4px; }
 
-.snap-rec-outer:active {
-  transform: scale(0.92);
-}
+#showBarBtn { position: absolute; bottom: 16px; right: 16px; z-index: 21; display: none; }
+#stage.bars-hidden #showBarBtn { display: flex; }
 
-/* Recording active state */
-.snap-rec-outer.recording {
-  border-color: #ff3b30;
-}
-
-.snap-rec-outer.recording .snap-rec-inner {
-  background: #ff3b30;
-  border-radius: 8px;
-  transform: scale(0.55);
-}
-
-.pause-rec-btn {
-  width: 38px;
-  height: 38px;
-}
-
-/* Sliders */
-.sliders-row {
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 8px;
-}
-
-.ctrl-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-
-.slider-icon {
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--snap-text-dim);
-}
-
-input[type=range] {
-  width: 100%;
-  accent-color: var(--snap-black);
-  height: 4px;
-}
-
-#showBarBtn {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 21;
-  display: none;
-}
-
-#stage.bars-hidden #showBarBtn {
-  display: flex;
-}
-
-/* Review Screen */
 #review {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  z-index: 55;
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 55;
 }
-
-#review.active {
-  display: flex;
-}
-
-.review-card {
-  align-items: center;
-}
-
-#review video {
-  width: 100%;
-  max-height: 55vh;
-  border-radius: 16px;
-  background: #000;
-}
-
-.review-actions {
-  display: flex;
-  gap: 12px;
-}
+#review.active { display: flex; }
+.review-card { align-items: center; }
+#review video { width: 100%; max-height: 55vh; border-radius: 16px; background: #000; }
+.review-actions { display: flex; gap: 12px; }
