@@ -1,620 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Teleprompter</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-  :root{
-    --font-size: 46px;
-    --margin-pct: 10%;
-    --line-height: 1.4;
-    --bg: #08090b;
-    --ink: #f4f4f2;
-    --ink-dim: #8b8c90;
-    --accent: #ffd166;
-    --panel-bg: rgba(10,11,13,0.88);
-    --panel-border: #232427;
-    --viewport-h: 46vh;
-  }
-  *{box-sizing:border-box;}
-  html,body{
-    margin:0; padding:0; height:100%; width:100%;
-    background:var(--bg); color:var(--ink);
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    overflow:hidden;
-  }
-
-  /* ---------- Setup screen ---------- */
-  #setup{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    background:var(--bg); z-index:50;
-  }
-  #setup .card{ width:min(720px, 92vw); display:flex; flex-direction:column; gap:16px; }
-  #setup h1{ font-size:22px; font-weight:600; letter-spacing:0.02em; margin:0; }
-  #setup p.sub{ margin:0; color:#9a9ba0; font-size:14px; line-height:1.5; }
-  #scriptInput{
-    width:100%; height:240px; resize:vertical;
-    background:#111214; color:var(--ink); border:1px solid var(--panel-border);
-    border-radius:10px; padding:16px; font-size:16px; line-height:1.6; font-family:inherit;
-  }
-  #scriptInput:focus{ outline:none; border-color:#3a3c40; }
-  .setup-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  #importBtn{
-    background:#17181b; border:1px solid var(--panel-border); color:var(--ink);
-    border-radius:8px; padding:9px 14px; font-size:13px; cursor:pointer;
-  }
-  #importBtn:hover{ background:#1e1f23; }
-  #importStatus{ font-size:12px; color:#9a9ba0; }
-  #startBtn{
-    background:var(--accent); color:#1a1503; border:none; border-radius:8px;
-    padding:12px 22px; font-size:15px; font-weight:600; cursor:pointer;
-    transition:transform .12s ease;
-  }
-  #startBtn:hover{ transform:translateY(-1px); }
-
-  /* ---------- Stage ---------- */
-  #stage{ position:fixed; inset:0; display:none; background:var(--bg); }
-  #stage.active{ display:block; }
-
-  #camera{
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    display:none; background:#000;
-  }
-  #camera.on{ display:block; }
-  #camera.mirrored{ transform:scaleX(-1); }
-  #noCameraMsg{
-    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
-    color:#6b6c70; font-size:14px; text-align:center; padding:40px;
-  }
-  #noCameraMsg.show{ display:flex; }
-
-  #dimOverlay{ position:absolute; inset:0; background:rgba(0,0,0,0.28); pointer-events:none; }
-
-  #guide{
-    position:absolute; left:0; right:0; top:50%; height:1px;
-    background: rgba(255,255,255,0.10); pointer-events:none; z-index:5;
-  }
-  #guide::before, #guide::after{
-    content:''; position:absolute; top:-4px; width:0; height:0;
-  }
-  #guide::before{ left:6px; border:6px solid transparent; border-left-color:var(--accent); }
-  #guide::after{ right:6px; border:6px solid transparent; border-right-color:var(--accent); }
-
-  #viewport{
-    position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
-    height: var(--viewport-h);
-    overflow:hidden; padding: 0 var(--margin-pct);
-    touch-action:none; cursor:grab; z-index:4;
-  }
-  #viewport:active{ cursor:grabbing; }
-
-  #scrollWrap{ will-change: transform; }
-
-  #textFlow{
-    font-size: var(--font-size); line-height: var(--line-height);
-    font-weight:600; text-align:center; color: var(--ink);
-  }
-  .word{ transition: color .2s ease, opacity .2s ease; }
-  .word.past{ color: var(--ink-dim); opacity:0.55; }
-  .word.now{ color: var(--accent); }
-
-  /* ---------- Countdown ---------- */
-  #countdown{
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:rgba(0,0,0,0.55); z-index:40; font-size:140px; font-weight:700; color:var(--accent);
-  }
-  #countdown.show{ display:flex; }
-
-  /* ---------- Rec indicator ---------- */
-  #recBadge{
-    position:absolute; top:18px; left:50%; transform:translateX(-50%);
-    display:none; align-items:center; gap:8px; background:rgba(0,0,0,0.55);
-    border-radius:20px; padding:7px 16px; font-size:13px; z-index:20;
-  }
-  #recBadge.show{ display:flex; }
-  #recBadge .dot{ width:9px; height:9px; border-radius:50%; background:#ff4d4d; animation:pulse 1.2s infinite; }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
-
-  /* ---------- Controls ---------- */
-  #controls{
-    position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:12px;
-    flex-wrap:wrap; padding:12px 18px; background:var(--panel-bg);
-    border-top:1px solid var(--panel-border); backdrop-filter: blur(6px); z-index:10;
-    transition: opacity .25s ease, transform .25s ease;
-  }
-  #controls.hidden-bar{ opacity:0; transform:translateY(100%); pointer-events:none; }
-  .ctrl-group{ display:flex; align-items:center; gap:7px; }
-  .ctrl-label{ font-size:11px; color:#9a9ba0; white-space:nowrap; min-width:30px; }
-  input[type=range]{ width:100px; accent-color: var(--accent); }
-  .icon-btn{
-    background:#17181b; border:1px solid var(--panel-border); color:var(--ink);
-    border-radius:8px; padding:9px 13px; font-size:13px; cursor:pointer;
-    display:flex; align-items:center; gap:6px; white-space:nowrap;
-  }
-  .icon-btn:hover{ background:#1e1f23; }
-  .icon-btn.on{ border-color: var(--accent); color: var(--accent); }
-  .icon-btn.record{ border-color:#ff4d4d33; }
-  .icon-btn.record.active{ background:#ff4d4d; border-color:#ff4d4d; color:#fff; }
-  .spacer{ flex:1; }
-  #status{ font-size:12px; color:#9a9ba0; min-width:110px; }
-  #showBarBtn{ position:absolute; bottom:14px; right:20px; z-index:11; display:none; }
-  #stage.bars-hidden #showBarBtn{ display:flex; }
-
-  /* nudge buttons */
-  #nudgeBack, #nudgeFwd{
-    position:absolute; z-index:11; background:rgba(0,0,0,0.4); border:1px solid var(--panel-border);
-    color:var(--ink); border-radius:50%; width:42px; height:42px; font-size:18px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #nudgeBack{ left:14px; top:50%; transform:translateY(-50%); }
-  #nudgeFwd{ right:14px; top:50%; transform:translateY(-50%); }
-
-  /* ---------- Review screen ---------- */
-  #review{
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:var(--bg); z-index:55; flex-direction:column; gap:18px;
-  }
-  #review.active{ display:flex; }
-  #review video{ max-width:min(480px,88vw); max-height:60vh; border-radius:12px; background:#000; }
-  .review-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-  .btn-secondary{
-    background:#17181b; border:1px solid var(--panel-border); color:var(--ink);
-    border-radius:8px; padding:11px 18px; font-size:14px; cursor:pointer; text-decoration:none;
-  }
-  .btn-secondary:hover{ background:#1e1f23; }
-  .btn-primary{
-    background:var(--accent); color:#1a1503; border:none; border-radius:8px;
-    padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none;
-  }
-
-  @media (max-width:640px){
-    .ctrl-label{ display:none; }
-    input[type=range]{ width:64px; }
-    #status{ display:none; }
-    #countdown{ font-size:90px; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Snap Prompter</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup">
-  <div class="card">
-    <h1>Teleprompter</h1>
-    <p class="sub">Paste your script. It scrolls at a steady, adjustable speed — no voice matching, so no glitches from repeated words. Drag, tap the nudge arrows, or use the speed slider to stay in sync while recording.</p>
-    <p class="sub" id="secureWarning" style="display:none; color:#ff9b6a;"></p>
-    <textarea id="scriptInput" placeholder="Paste or type your script here..."></textarea>
-    <div class="setup-row">
-      <div class="setup-row" style="gap:10px;">
-        <button id="importBtn">⇪ Import .txt / .docx / .pdf</button>
+  <!-- Screen Flash Overlay -->
+  <div id="flashOverlay"></div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setup">
+    <div class="card">
+      <div class="header">
+        <svg class="snap-logo" viewBox="0 0 24 24"><path d="M12 2C8 2 5 4.5 5 8c0 2 1 3.5 1.5 5-.5 1-2 1.5-3 1.5s-1.5 1-1 2c1 2 4.5 2.5 6.5 2.5.5 1 1.5 3 3 3s2.5-2 3-3c2 0 5.5-.5 6.5-2.5.5-1 0-2-1-2s-2.5-.5-3-1.5c.5-1.5 1.5-3 1.5-5 0-3.5-3-6-7-6z"/></svg>
+        <h1>Snap Prompter</h1>
+      </div>
+      <p class="sub">Paste your script or import a file. Get ready to shoot clean, readable videos with snap controls!</p>
+      <p class="sub" id="secureWarning" style="display:none; color:#e0245e;"></p>
+      
+      <textarea id="scriptInput" placeholder="Type or paste your script here..."></textarea>
+      
+      <div class="setup-row">
+        <button id="importBtn" class="btn-snap-secondary">
+          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+          Import Document
+        </button>
         <input type="file" id="fileInput" accept=".txt,.docx,.pdf" style="display:none;">
         <span id="importStatus"></span>
+        <button id="startBtn" class="btn-snap-primary">Start</button>
       </div>
-      <button id="startBtn">Start ▸</button>
-    </div>
-  </div>
-</div>
-
-<!-- REVIEW -->
-<div id="review">
-  <video id="reviewVideo" controls playsinline></video>
-  <div class="review-actions">
-    <a id="downloadBtn" class="btn-primary" download="teleprompter-take.webm">⬇ Download take</a>
-    <button id="retakeBtn" class="btn-secondary">↺ Record another take</button>
-    <button id="reviewEditBtn" class="btn-secondary">✎ Edit script</button>
-  </div>
-</div>
-
-<!-- STAGE -->
-<div id="stage">
-  <video id="camera" autoplay playsinline muted></video>
-  <div id="noCameraMsg">Camera/mic not available — rehearsal mode only.<br>Recording needs camera + microphone access.</div>
-  <div id="dimOverlay"></div>
-  <div id="guide"></div>
-
-  <div id="viewport">
-    <div id="scrollWrap">
-      <div id="textFlow"></div>
     </div>
   </div>
 
-  <button id="nudgeBack" title="Back a line">◀</button>
-  <button id="nudgeFwd" title="Forward a line">▶</button>
-
-  <div id="recBadge"><span class="dot"></span><span id="recTime">0:00</span></div>
-  <div id="countdown"></div>
-
-  <button id="showBarBtn" class="icon-btn">⌄ controls</button>
-
-  <div id="controls">
-    <button id="backBtn" class="icon-btn" title="Edit script">✎ Edit</button>
-    <button id="restartBtn" class="icon-btn" title="Back to top">↺ Top</button>
-
-    <div class="ctrl-group">
-      <span class="ctrl-label">Speed</span>
-      <input type="range" id="speedSlider" min="70" max="220" value="140">
+  <!-- REVIEW SCREEN -->
+  <div id="review">
+    <div class="card review-card">
+      <video id="reviewVideo" controls playsinline></video>
+      <div class="review-actions">
+        <a id="downloadBtn" class="btn-snap-primary" download="snap-take.webm">
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </a>
+        <button id="retakeBtn" class="btn-snap-secondary" title="Retake">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        <button id="reviewEditBtn" class="btn-snap-secondary" title="Edit Script">
+          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">Size</span>
-      <input type="range" id="fontSlider" min="24" max="100" value="46">
-    </div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">Margin</span>
-      <input type="range" id="marginSlider" min="0" max="30" value="10">
-    </div>
-
-    <button id="playBtn" class="icon-btn" title="Play / pause scroll (rehearse)">▶ Play</button>
-    <button id="mirrorBtn" class="icon-btn" title="Mirror camera preview (for glass rigs)">⇋ Mirror</button>
-    <button id="fsBtn" class="icon-btn" title="Full screen">⤢ Full screen</button>
-    <button id="recordBtn" class="icon-btn record" title="Record a take">● Record</button>
-    <button id="hideBarBtn" class="icon-btn" title="Hide this bar">⌄ Hide</button>
-
-    <span class="spacer"></span>
-    <span id="status">Ready</span>
   </div>
-</div>
 
-<script>
-(function(){
-  // ---------- State ----------
-  let expectedWords = [];
-  let lines = [];
-  let wordSpans = [];
-  let scrollOffset = 0;
-  let maxScroll = 0;
-  let pxPerWord = 1;
-  let wpm = 140;
-  let pxPerSecond = 60;
-  let playing = false;
-  let rafId = null;
-  let lastFrameTime = null;
-  let lastHighlightLine = -1;
+  <!-- STAGE SCREEN -->
+  <div id="stage">
+    <video id="camera" autoplay playsinline muted></video>
+    <div id="noCameraMsg">Camera / mic offline.<br>Rehearsal mode active.</div>
+    <div id="dimOverlay"></div>
+    <div id="guide"></div>
 
-  let mediaStream = null;
-  let mediaRecorder = null;
-  let recordedChunks = [];
-  let recording = false;
-  let recordTimerInterval = null;
-  let recordStart = null;
-  let currentTakeUrl = null;
+    <!-- Scrolling Text Viewport -->
+    <div id="viewport">
+      <div id="scrollWrap">
+        <div id="textFlow"></div>
+      </div>
+    </div>
 
-  const setupEl = document.getElementById('setup');
-  const stageEl = document.getElementById('stage');
-  const reviewEl = document.getElementById('review');
-  const scriptInput = document.getElementById('scriptInput');
-  const startBtn = document.getElementById('startBtn');
-  const textFlow = document.getElementById('textFlow');
-  const scrollWrap = document.getElementById('scrollWrap');
-  const viewport = document.getElementById('viewport');
-  const camera = document.getElementById('camera');
-  const noCameraMsg = document.getElementById('noCameraMsg');
-  const statusEl = document.getElementById('status');
-  const controls = document.getElementById('controls');
-  const showBarBtn = document.getElementById('showBarBtn');
-  const fileInput = document.getElementById('fileInput');
-  const importStatus = document.getElementById('importStatus');
-  const secureWarning = document.getElementById('secureWarning');
-  const countdownEl = document.getElementById('countdown');
-  const recBadge = document.getElementById('recBadge');
-  const recTime = document.getElementById('recTime');
-  const playBtn = document.getElementById('playBtn');
-  const recordBtn = document.getElementById('recordBtn');
-  const mirrorBtn = document.getElementById('mirrorBtn');
+    <!-- Nudge Side Controls -->
+    <button id="nudgeBack" class="side-btn" title="Nudge Up">
+      <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+    </button>
+    <button id="nudgeFwd" class="side-btn" title="Nudge Down">
+      <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+    </button>
 
-  if(!window.isSecureContext){
-    secureWarning.style.display = 'block';
-    secureWarning.textContent = location.protocol === 'file:'
-      ? '⚠ Opened directly from disk — browsers block camera/mic here. Upload to Netlify Drop / Tiiny.host, or run "npx serve" and open via localhost, to enable recording.'
-      : '⚠ Camera/mic recording needs HTTPS. Rehearsal scrolling still works.';
-  }
+    <!-- Top Camera Header Overlay -->
+    <div id="topHeader">
+      <button id="backBtn" class="circle-btn" title="Edit Script">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
 
-  // ---------- Script loading ----------
-  function loadScript(text){
-    expectedWords = text.split(/\s+/).filter(Boolean);
-    textFlow.innerHTML = expectedWords.map((w,i)=>
-      `<span class="word" data-i="${i}">${escapeHtml(w)}</span>`
-    ).join(' ');
-    wordSpans = Array.from(textFlow.querySelectorAll('.word'));
-    wordSpans.forEach(span=>{
-      span.addEventListener('click', ()=> jumpToWord(parseInt(span.dataset.i,10)));
-    });
-    scrollOffset = 0;
-    requestAnimationFrame(()=>{ computeGeometry(); applyScroll(); });
-  }
-  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      <div id="recBadge"><span class="dot"></span><span id="recTime">0:00</span></div>
 
-  // ---------- Geometry ----------
-  function computeGeometry(){
-    if(!wordSpans.length) return;
-    const vh = viewport.clientHeight;
-    textFlow.style.paddingTop = (vh/2)+'px';
-    textFlow.style.paddingBottom = (vh/2)+'px';
+      <div class="header-actions">
+        <button id="flashBtn" class="circle-btn" title="Screen Flash">
+          <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+        </button>
+        <button id="flipBtn" class="circle-btn" title="Flip Camera">
+          <svg viewBox="0 0 24 24"><path d="M9.37 5.51A7 7 0 004 12h3l-4 4-4-4h3a9 9 0 0114.82-6.5l-1.45 1.01zM14.63 18.49A7 7 0 0020 12h-3l4-4 4 4h-3a9 9 0 01-14.82 6.5l1.45-1.01z"/></svg>
+        </button>
+      </div>
+    </div>
 
-    // group words into lines for the moving highlight
-    lines = [];
-    let curTop=null, start=0;
-    wordSpans.forEach((span,i)=>{
-      const top = Math.round(span.offsetTop);
-      if(curTop===null){ curTop=top; start=i; }
-      else if(top!==curTop){ lines.push({start,end:i-1,top:curTop}); curTop=top; start=i; }
-    });
-    lines.push({start,end:wordSpans.length-1,top:curTop});
+    <div id="countdown"></div>
+    <button id="showBarBtn" class="circle-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 8l-6 6h12z"/></svg>
+    </button>
 
-    const totalHeight = textFlow.scrollHeight;
-    const prevMax = maxScroll || 1;
-    const prevFrac = scrollOffset / prevMax;
-    maxScroll = Math.max(1, totalHeight - vh);
-    scrollOffset = Math.min(maxScroll, prevFrac * maxScroll);
-    pxPerWord = maxScroll / Math.max(1, expectedWords.length);
-    updateSpeed();
-  }
-  function updateSpeed(){ pxPerSecond = (wpm/60) * pxPerWord; }
+    <!-- Bottom Controls Panel -->
+    <div id="controls">
+      <div class="ctrl-row flex-center">
+        <button id="restartBtn" class="icon-btn" title="Back to Top">
+          <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        </button>
+        <button id="mirrorBtn" class="icon-btn" title="Mirror Camera">
+          <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        </button>
 
-  function applyScroll(){
-    scrollWrap.style.transform = `translateY(${-scrollOffset}px)`;
-    const vh = viewport.clientHeight;
-    const guideY = scrollOffset + vh/2;
-    let li = lines.findIndex(l => guideY < l.top + (lines[1]? (lines[1].top-lines[0].top): 40));
-    if(li === -1) li = lines.length - 1;
-    if(li !== lastHighlightLine){
-      lines.forEach((l,idx)=>{
-        for(let i=l.start;i<=l.end;i++){
-          wordSpans[i].classList.remove('past','now');
-          if(idx < li) wordSpans[i].classList.add('past');
-          else if(idx === li) wordSpans[i].classList.add('now');
-        }
-      });
-      lastHighlightLine = li;
-    }
-  }
+        <!-- SNAPCHAT RECORD BUTTON AREA -->
+        <div class="record-wrapper">
+          <button id="pauseRecBtn" class="circle-btn pause-rec-btn" title="Pause/Resume Rec" style="display:none;">
+            <svg id="pauseRecIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          
+          <button id="recordBtn" class="snap-rec-outer" title="Record Take">
+            <div class="snap-rec-inner"></div>
+          </button>
+        </div>
 
-  function jumpToWord(i){
-    const span = wordSpans[i];
-    if(!span) return;
-    const vh = viewport.clientHeight;
-    scrollOffset = Math.min(maxScroll, Math.max(0, span.offsetTop - vh/2));
-    applyScroll();
-  }
+        <button id="playBtn" class="icon-btn" title="Play/Pause Rehearsal">
+          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button id="fsBtn" class="icon-btn" title="Fullscreen">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+        <button id="hideBarBtn" class="icon-btn" title="Hide Controls">
+          <svg viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
+        </button>
+      </div>
 
-  // ---------- Playback loop ----------
-  function tick(ts){
-    if(!playing) return;
-    if(lastFrameTime===null) lastFrameTime = ts;
-    const dt = (ts - lastFrameTime)/1000;
-    lastFrameTime = ts;
-    scrollOffset = Math.min(maxScroll, scrollOffset + pxPerSecond*dt);
-    applyScroll();
-    if(scrollOffset >= maxScroll){ pause(); return; }
-    rafId = requestAnimationFrame(tick);
-  }
-  function play(){ if(playing) return; playing=true; lastFrameTime=null; rafId=requestAnimationFrame(tick); updatePlayBtn(); }
-  function pause(){ playing=false; if(rafId) cancelAnimationFrame(rafId); updatePlayBtn(); }
-  function togglePlay(){ playing ? pause() : play(); }
-  function updatePlayBtn(){ playBtn.textContent = playing ? '⏸ Pause' : '▶ Play'; playBtn.classList.toggle('on', playing); }
+      <!-- Sliders Row -->
+      <div class="ctrl-row sliders-row">
+        <div class="ctrl-group">
+          <span class="slider-icon">⚡</span>
+          <input type="range" id="speedSlider" min="70" max="220" value="140">
+        </div>
+        <div class="ctrl-group">
+          <span class="slider-icon">A</span>
+          <input type="range" id="fontSlider" min="24" max="100" value="46">
+        </div>
+        <div class="ctrl-group">
+          <span class="slider-icon">↔</span>
+          <input type="range" id="marginSlider" min="0" max="30" value="10">
+        </div>
+      </div>
+    </div>
+  </div>
 
-  function nudge(px){
-    pause();
-    scrollOffset = Math.min(maxScroll, Math.max(0, scrollOffset + px));
-    applyScroll();
-  }
-  document.getElementById('nudgeBack').addEventListener('click', ()=> nudge(-parseFloat(getComputedStyle(textFlow).fontSize)*2.2));
-  document.getElementById('nudgeFwd').addEventListener('click', ()=> nudge(parseFloat(getComputedStyle(textFlow).fontSize)*2.2));
-
-  // ---------- Drag to scrub ----------
-  let dragging=false, dragStartY=0, dragStartScroll=0, wasPlaying=false;
-  viewport.addEventListener('pointerdown', (e)=>{
-    dragging=true; dragStartY=e.clientY; dragStartScroll=scrollOffset;
-    wasPlaying=playing; pause();
-    viewport.setPointerCapture(e.pointerId);
-  });
-  viewport.addEventListener('pointermove', (e)=>{
-    if(!dragging) return;
-    const dy = dragStartY - e.clientY;
-    scrollOffset = Math.min(maxScroll, Math.max(0, dragStartScroll + dy));
-    applyScroll();
-  });
-  viewport.addEventListener('pointerup', ()=>{
-    dragging=false;
-    if(wasPlaying) play();
-  });
-
-  // ---------- Sliders ----------
-  document.getElementById('speedSlider').addEventListener('input', (e)=>{
-    wpm = parseInt(e.target.value,10); updateSpeed();
-  });
-  document.getElementById('fontSlider').addEventListener('input', (e)=>{
-    document.documentElement.style.setProperty('--font-size', e.target.value+'px');
-    requestAnimationFrame(computeGeometry);
-  });
-  document.getElementById('marginSlider').addEventListener('input', (e)=>{
-    document.documentElement.style.setProperty('--margin-pct', e.target.value+'%');
-    requestAnimationFrame(computeGeometry);
-  });
-  window.addEventListener('resize', ()=> requestAnimationFrame(computeGeometry));
-
-  // ---------- Buttons ----------
-  playBtn.addEventListener('click', togglePlay);
-  mirrorBtn.addEventListener('click', ()=>{
-    camera.classList.toggle('mirrored');
-    mirrorBtn.classList.toggle('on');
-  });
-  document.getElementById('fsBtn').addEventListener('click', ()=>{
-    if(!document.fullscreenElement) stageEl.requestFullscreen?.();
-    else document.exitFullscreen?.();
-  });
-  document.getElementById('restartBtn').addEventListener('click', ()=>{
-    pause(); scrollOffset = 0; applyScroll();
-  });
-  document.getElementById('hideBarBtn').addEventListener('click', ()=>{
-    controls.classList.add('hidden-bar'); stageEl.classList.add('bars-hidden');
-  });
-  showBarBtn.addEventListener('click', ()=>{
-    controls.classList.remove('hidden-bar'); stageEl.classList.remove('bars-hidden');
-  });
-  document.getElementById('backBtn').addEventListener('click', ()=>{
-    pause(); stopCameraTracks();
-    stageEl.classList.remove('active');
-    setupEl.style.display = 'flex';
-  });
-  document.getElementById('reviewEditBtn').addEventListener('click', ()=>{
-    reviewEl.classList.remove('active');
-    setupEl.style.display = 'flex';
-  });
-  document.getElementById('retakeBtn').addEventListener('click', ()=>{
-    reviewEl.classList.remove('active');
-    stageEl.classList.add('active');
-    scrollOffset = 0; applyScroll();
-    statusEl.textContent = 'Ready';
-  });
-
-  // ---------- Keyboard ----------
-  window.addEventListener('keydown', (e)=>{
-    if(!stageEl.classList.contains('active')) return;
-    if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
-    else if(e.code==='ArrowUp'){ nudge(parseFloat(getComputedStyle(textFlow).fontSize)*2.2); }
-    else if(e.code==='ArrowDown'){ nudge(-parseFloat(getComputedStyle(textFlow).fontSize)*2.2); }
-    else if(e.key.toLowerCase()==='f'){ document.getElementById('fsBtn').click(); }
-    else if(e.key.toLowerCase()==='r'){ recordBtn.click(); }
-  });
-
-  // ---------- Camera ----------
-  async function startCamera(){
-    try{
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
-        audio:true
-      });
-      camera.srcObject = mediaStream;
-      camera.classList.add('on');
-      noCameraMsg.classList.remove('show');
-      statusEl.textContent = 'Ready';
-    }catch(e){
-      noCameraMsg.classList.add('show');
-      statusEl.textContent = 'No camera/mic — rehearsal only';
-      recordBtn.disabled = true;
-      recordBtn.style.opacity = 0.4;
-    }
-  }
-  function stopCameraTracks(){
-    if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
-    camera.classList.remove('on');
-  }
-
-  // ---------- Recording ----------
-  function pickMimeType(){
-    const candidates = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
-    for(const c of candidates){ if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) return c; }
-    return '';
-  }
-  function runCountdown(n, cb){
-    countdownEl.classList.add('show');
-    if(n<=0){ countdownEl.classList.remove('show'); cb(); return; }
-    countdownEl.textContent = n;
-    setTimeout(()=> runCountdown(n-1, cb), 700);
-  }
-  function startRecording(){
-    if(!mediaStream){ statusEl.textContent='Camera/mic unavailable'; return; }
-    recordedChunks = [];
-    const mime = pickMimeType();
-    try{
-      mediaRecorder = new MediaRecorder(mediaStream, mime ? {mimeType:mime} : undefined);
-    }catch(e){ statusEl.textContent='Recording not supported in this browser'; return; }
-    mediaRecorder.ondataavailable = (e)=>{ if(e.data && e.data.size>0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = onRecordingStop;
-    mediaRecorder.start();
-    recording = true;
-    recordStart = Date.now();
-    recBadge.classList.add('show');
-    recordBtn.textContent = '■ Stop';
-    recordBtn.classList.add('active');
-    recordTimerInterval = setInterval(()=>{
-      const s = Math.floor((Date.now()-recordStart)/1000);
-      recTime.textContent = `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
-    }, 250);
-  }
-  function stopRecording(){
-    if(mediaRecorder && recording){ mediaRecorder.stop(); }
-    recording = false;
-    pause();
-    clearInterval(recordTimerInterval);
-    recBadge.classList.remove('show');
-    recordBtn.textContent = '● Record';
-    recordBtn.classList.remove('active');
-  }
-  function onRecordingStop(){
-    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
-    if(currentTakeUrl) URL.revokeObjectURL(currentTakeUrl);
-    currentTakeUrl = URL.createObjectURL(blob);
-    const ext = (mediaRecorder.mimeType||'').includes('mp4') ? 'mp4' : 'webm';
-    document.getElementById('reviewVideo').src = currentTakeUrl;
-    const dl = document.getElementById('downloadBtn');
-    dl.href = currentTakeUrl;
-    dl.download = 'teleprompter-take.' + ext;
-    stageEl.classList.remove('active');
-    reviewEl.classList.add('active');
-  }
-  recordBtn.addEventListener('click', ()=>{
-    if(recording){ stopRecording(); return; }
-    if(!mediaStream){ statusEl.textContent='Camera/mic unavailable'; return; }
-    scrollOffset = 0; applyScroll();
-    runCountdown(3, ()=>{
-      startRecording();
-      play();
-    });
-  });
-
-  // ---------- File import ----------
-  document.getElementById('importBtn').addEventListener('click', ()=> fileInput.click());
-  fileInput.addEventListener('change', async ()=>{
-    const file = fileInput.files[0];
-    if(!file) return;
-    importStatus.textContent = 'Reading…';
-    try{
-      const ext = file.name.split('.').pop().toLowerCase();
-      let text = '';
-      if(ext === 'txt'){
-        text = await file.text();
-      } else if(ext === 'docx'){
-        const buf = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: buf });
-        text = result.value;
-      } else if(ext === 'pdf'){
-        const buf = await file.arrayBuffer();
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-        let full = '';
-        for(let p=1; p<=pdf.numPages; p++){
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          full += content.items.map(it=>it.str).join(' ') + '\n';
-        }
-        text = full;
-      } else {
-        importStatus.textContent = 'Unsupported file type';
-        return;
-      }
-      scriptInput.value = text.trim();
-      importStatus.textContent = `Loaded ${file.name}`;
-    }catch(err){
-      importStatus.textContent = 'Could not read file';
-      console.error(err);
-    }
-  });
-
-  // ---------- Start ----------
-  startBtn.addEventListener('click', async ()=>{
-    const text = scriptInput.value.trim();
-    if(!text) return;
-    loadScript(text);
-    setupEl.style.display = 'none';
-    stageEl.classList.add('active');
-    await startCamera();
-    requestAnimationFrame(computeGeometry);
-  });
-})();
-</script>
+  <script src="main.js"></script>
 </body>
 </html>
