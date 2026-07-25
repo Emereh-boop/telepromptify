@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Snap Prompter</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -60,7 +60,7 @@
   <div id="stage">
     <video id="camera" autoplay playsinline muted></video>
     <div id="noCameraMsg">Camera / mic offline.<br>Rehearsal mode active.</div>
-    <div id="dimOverlay"></div>
+
     <div id="guide"></div>
 
     <!-- Scrolling Text Viewport -->
@@ -106,8 +106,8 @@
         <button id="restartBtn" class="icon-btn" title="Back to Top">
           <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
         </button>
-        <button id="mirrorBtn" class="icon-btn" title="Mirror Camera">
-          <svg viewBox="0 0 24 24"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+        <button id="fsBtn" class="icon-btn" title="Fullscreen">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
         </button>
 
         <!-- RECORD BUTTON AREA -->
@@ -124,9 +124,6 @@
         <button id="playBtn" class="icon-btn" title="Play/Pause Rehearsal">
           <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
-        <button id="fsBtn" class="icon-btn" title="Fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-        </button>
         <button id="hideBarBtn" class="icon-btn" title="Hide Controls">
           <svg viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
         </button>
@@ -135,11 +132,7 @@
       <!-- Sliders Row -->
       <div class="ctrl-row sliders-row">
         <div class="ctrl-group">
-          <span class="slider-icon">⚡</span>
-          <input type="range" id="speedSlider" min="70" max="220" value="140">
-        </div>
-        <div class="ctrl-group">
-          <span class="slider-icon">A</span>
+          <span class="slider-icon">Aa</span>
           <input type="range" id="fontSlider" min="24" max="100" value="46">
         </div>
         <div class="ctrl-group">

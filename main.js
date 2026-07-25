@@ -197,9 +197,6 @@
     if (wasPlaying) play();
   });
 
-  speedSlider.addEventListener('input', (e) => {
-    wpm = parseInt(e.target.value, 10); updateSpeed();
-  });
   document.getElementById('fontSlider').addEventListener('input', (e) => {
     document.documentElement.style.setProperty('--font-size', e.target.value + 'px');
     requestAnimationFrame(computeGeometry);
@@ -211,10 +208,6 @@
   window.addEventListener('resize', () => requestAnimationFrame(computeGeometry));
 
   playBtn.addEventListener('click', togglePlay);
-  mirrorBtn.addEventListener('click', () => {
-    camera.classList.toggle('mirrored');
-    mirrorBtn.classList.toggle('on');
-  });
   flashBtn.addEventListener('click', () => {
     flashOverlay.classList.toggle('active');
     flashBtn.classList.toggle('on');
