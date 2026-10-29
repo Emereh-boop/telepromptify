@@ -1,0 +1,2 @@
+{"name":"Telepromptify","short_name":"Telepromptify","description":"Free private teleprompter with camera recording and color grading.","id":"/","start_url":"/?source=pwa","scope":"/","display":"standalone","orientation":"portrait","background_color":"#0c0d10","theme_color":"#0c0d10","categories":["productivity","video"],
+"icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}

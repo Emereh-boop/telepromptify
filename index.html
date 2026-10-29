@@ -1,148 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snap Prompter</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Telepromptify Free Teleprompter App with Camera Recording</title>
+<meta name="description" content="Telepromptify is a free, private teleprompter. Paste or import your script, record to camera with color grading, and download the video. Works offline. Nothing is uploaded.">
+<link rel="canonical" href="https://YOURDOMAIN.com/">
+<meta name="theme-color" content="#0c0d10">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Telepromptify – Free Teleprompter App">
+<meta property="og:description" content="Read your script, record with color grading, keep everything on your device.">
+<meta property="og:url" content="https://YOURDOMAIN.com/">
+<meta property="og:image" content="https://YOURDOMAIN.com/icons/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="css/styles.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Telepromptify","applicationCategory":"MultimediaApplication","operatingSystem":"Android, Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free teleprompter with camera recording and color grading."}</script>
 </head>
 <body>
+<svg hidden>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M19 13H5v-2h14z"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M3 17v2h6v-2zM3 5v2h10V5zm10 16v-2h8v-2h-8v-2h-2v6zM7 9v2H3v2h4v2h2V9zm14 4v-2H11v2zm-6-4h2V7h4V5h-4V3h-2z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7zM5 18v2h14v-2z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.3V21h3.8L17.8 9.9l-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 7V3.5L18.5 9z"/></symbol>
+  <symbol id="i-flip" viewBox="0 0 24 24"><path d="M20 4h-3.2L15 2H9L7.2 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-8 13a5 5 0 0 1-4.6-3H9l-2.5-3L4 14h2.3A6 6 0 0 1 12 7a6 6 0 0 1 4.4 2l-1.4 1.4A4 4 0 0 0 12 9a4 4 0 0 0-3.7 2.6L9 12.5 12 17z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M16.6 8.6 12 13.2 7.4 8.6 6 10l6 6 6-6z"/></symbol>
+</svg>
 
-  <!-- Screen Flash Overlay -->
-  <div id="flashOverlay"></div>
-
-  <!-- SETUP SCREEN -->
-  <div id="setup">
-    <div class="card">
-      <div class="header">
-        <svg class="snap-logo" viewBox="0 0 24 24"><path d="M12 2C8 2 5 4.5 5 8c0 2 1 3.5 1.5 5-.5 1-2 1.5-3 1.5s-1.5 1-1 2c1 2 4.5 2.5 6.5 2.5.5 1 1.5 3 3 3s2.5-2 3-3c2 0 5.5-.5 6.5-2.5.5-1 0-2-1-2s-2.5-.5-3-1.5c.5-1.5 1.5-3 1.5-5 0-3.5-3-6-7-6z"/></svg>
-        <h1>Snap Prompter</h1>
-      </div>
-      <p class="sub">Paste your script or import a file. Get ready to shoot clean, readable videos with snap controls!</p>
-      <p class="sub" id="secureWarning" style="display:none; color:#e0245e;"></p>
-      
-      <!-- Enable native context menus/pasting explicitly -->
-      <textarea id="scriptInput" placeholder="Type or paste your script here..." spellcheck="true"></textarea>
-      
-      <div class="setup-row">
-        <button id="importBtn" class="btn-snap-secondary">
-          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-          Import
-        </button>
-        <input type="file" id="fileInput" accept=".txt,.docx,.pdf" style="display:none;">
-        <span id="importStatus"></span>
-        <button id="startBtn" class="btn-snap-primary">Start</button>
-      </div>
+<!-- EDITOR -->
+<main id="editor" class="screen active">
+  <header class="bar">
+    <h1>Telepromptify</h1>
+    <div class="row-gap">
+      <button id="importBtn" class="btn ghost"><svg><use href="#i-file"/></svg>Import</button>
+      <input type="file" id="fileInput" accept=".txt,.docx,.pdf" hidden>
+      <button id="clearBtn" class="btn ghost">Clear</button>
     </div>
+  </header>
+  <label for="script" class="sr">Script</label>
+  <textarea id="script" placeholder="Paste or type your script…" spellcheck="true" maxlength="200000"></textarea>
+  <p id="status" class="dim" role="status"></p>
+  <footer class="dock">
+    <span id="stats" class="dim">0 words</span>
+    <button id="startBtn" class="btn primary">Start</button>
+  </footer>
+  <nav class="legal"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><button id="wipeBtn" class="link">Delete my data</button></nav>
+  <noscript><p class="dim">Telepromptify needs JavaScript to run.</p></noscript>
+</main>
+
+<!-- STAGE -->
+<section id="stage" class="screen">
+  <video id="camera" autoplay playsinline muted></video>
+  <div id="tint"></div>
+  <div id="grid"></div>
+  <div id="dim"></div>
+  <div id="noCamera" hidden>Camera or microphone unavailable.<br>Rehearsal mode is on.</div>
+
+  <div id="guide"></div>
+  <div id="viewport"><div id="scrollWrap"><div id="textFlow"></div></div></div>
+
+  <div id="topbar">
+    <button id="backBtn" class="round" aria-label="Back to script"><svg><use href="#i-x"/></svg></button>
+    <div id="recBadge" hidden><span class="dot"></span><span id="recTime">0:00</span></div>
+    <button id="settingsBtn" class="round" aria-label="Settings"><svg><use href="#i-sliders"/></svg></button>
   </div>
 
-  <!-- REVIEW SCREEN -->
-  <div id="review">
-    <div class="card review-card">
-      <video id="reviewVideo" controls playsinline></video>
-      <div class="review-actions">
-        <a id="downloadBtn" class="btn-snap-primary" download="snap-take.webm">
-          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-        </a>
-        <button id="retakeBtn" class="btn-snap-secondary" title="Retake">
-          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-        </button>
-        <button id="reviewEditBtn" class="btn-snap-secondary" title="Edit Script">
-          <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-        </button>
-      </div>
-    </div>
+  <div id="speedStack">
+    <button id="speedUp" class="round" aria-label="Faster"><svg><use href="#i-plus"/></svg></button>
+    <span id="wpmLabel" class="dim">140</span>
+    <button id="speedDown" class="round" aria-label="Slower"><svg><use href="#i-minus"/></svg></button>
   </div>
 
-  <!-- STAGE SCREEN -->
-  <div id="stage">
-    <video id="camera" autoplay playsinline muted></video>
-    <div id="noCameraMsg">Camera / mic offline.<br>Rehearsal mode active.</div>
-
-    <div id="guide"></div>
-
-    <!-- Scrolling Text Viewport -->
-    <div id="viewport">
-      <div id="scrollWrap">
-        <div id="textFlow"></div>
-      </div>
+  <div id="controls">
+    <button id="restartBtn" class="icon" aria-label="Back to top"><svg><use href="#i-restart"/></svg></button>
+    <button id="flipBtn" class="icon" aria-label="Flip camera"><svg><use href="#i-flip"/></svg></button>
+    <div class="rec-wrap">
+      <button id="pauseRecBtn" class="round small" aria-label="Pause recording" hidden><svg><use id="pauseIcon" href="#i-pause"/></svg></button>
+      <button id="recordBtn" class="rec" aria-label="Record"><span></span></button>
     </div>
-
-    <!-- Combined Speed Controls (Stacked on Right Side) -->
-    <div class="speed-control-stack">
-      <button id="speedUpBtn" class="side-btn" title="Increase Speed">
-        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-      </button>
-      <button id="speedDownBtn" class="side-btn" title="Decrease Speed">
-        <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
-      </button>
-    </div>
-
-    <!-- Top Camera Header Overlay (Camera Flip Removed) -->
-    <div id="topHeader">
-      <button id="backBtn" class="circle-btn" title="Edit Script">
-        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-      </button>
-
-      <div id="recBadge"><span class="dot"></span><span id="recTime">0:00</span></div>
-
-      <div class="header-actions">
-        <button id="flashBtn" class="circle-btn" title="Screen Flash">
-          <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <div id="countdown"></div>
-    <button id="showBarBtn" class="circle-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 8l-6 6h12z"/></svg>
-    </button>
-
-    <!-- Bottom Controls Panel -->
-    <div id="controls">
-      <div class="ctrl-row flex-center">
-        <button id="restartBtn" class="icon-btn" title="Back to Top">
-          <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-        </button>
-        <button id="fsBtn" class="icon-btn" title="Fullscreen">
-          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-        </button>
-
-        <!-- RECORD BUTTON AREA -->
-        <div class="record-wrapper">
-          <button id="pauseRecBtn" class="circle-btn pause-rec-btn" title="Pause/Resume Rec" style="display:none;">
-            <svg id="pauseRecIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          </button>
-          
-          <button id="recordBtn" class="snap-rec-outer" title="Record Take">
-            <div class="snap-rec-inner"></div>
-          </button>
-        </div>
-
-        <button id="playBtn" class="icon-btn" title="Play/Pause Rehearsal">
-          <svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <button id="hideBarBtn" class="icon-btn" title="Hide Controls">
-          <svg viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>
-        </button>
-      </div>
-
-      <!-- Sliders Row -->
-      <div class="ctrl-row sliders-row">
-        <div class="ctrl-group">
-          <span class="slider-icon">Aa</span>
-          <input type="range" id="fontSlider" min="24" max="100" value="46">
-        </div>
-        <div class="ctrl-group">
-          <span class="slider-icon">↔</span>
-          <input type="range" id="marginSlider" min="0" max="30" value="10">
-        </div>
-      </div>
-    </div>
+    <button id="playBtn" class="icon" aria-label="Play or pause"><svg><use id="playIcon" href="#i-play"/></svg></button>
+    <button id="hideBtn" class="icon" aria-label="Hide controls"><svg><use href="#i-chevron"/></svg></button>
   </div>
+  <button id="showBtn" class="round" aria-label="Show controls" hidden><svg><use href="#i-chevron"/></svg></button>
+  <div id="countdown" hidden></div>
+</section>
 
-  <script src="main.js"></script>
+<!-- SETTINGS SHEET -->
+<aside id="sheet" hidden>
+  <div class="sheet-head">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="text" role="tab">Text</button>
+      <button class="tab" data-tab="camera" role="tab">Camera</button>
+      <button class="tab" data-tab="look" role="tab">Look</button>
+    </div>
+    <button id="sheetClose" class="round small" aria-label="Close"><svg><use href="#i-x"/></svg></button>
+  </div>
+  <div class="pane" data-pane="text">
+    <label class="field"><span>Font size</span><input type="range" data-key="font" min="24" max="100"></label>
+    <label class="field"><span>Side margin</span><input type="range" data-key="margin" min="0" max="30"></label>
+    <label class="field"><span>Background dim</span><input type="range" data-key="dim" min="0" max="80"></label>
+    <label class="field"><span>Countdown</span><select data-key="countdown"><option value="0">Off</option><option value="3">3 s</option><option value="5">5 s</option><option value="10">10 s</option></select></label>
+    <label class="field"><span>Mirror text</span><input type="checkbox" data-key="mirrorText"></label>
+  </div>
+  <div class="pane" data-pane="camera" hidden>
+    <label class="field"><span>Camera</span><select data-key="facing"><option value="user">Front</option><option value="environment">Back</option></select></label>
+    <label class="field"><span>Quality</span><select data-key="res"><option value="720">720p</option><option value="1080">1080p</option></select></label>
+    <label class="field"><span>Mirror preview</span><input type="checkbox" data-key="mirrorPreview"></label>
+    <label class="field"><span>Grid</span><input type="checkbox" data-key="grid"></label>
+    <label class="field" id="zoomRow" hidden><span>Zoom</span><input type="range" id="zoom" step="0.1"></label>
+    <label class="field" id="torchRow" hidden><span>Light</span><input type="checkbox" id="torch"></label>
+  </div>
+  <div class="pane" data-pane="look" hidden>
+    <label class="field"><span>Preset</span><select id="preset"><option value="none">None</option><option value="natural">Natural</option><option value="warm">Warm</option><option value="cool">Cool</option><option value="cinematic">Cinematic</option><option value="mono">Mono</option></select></label>
+    <label class="field"><span>Brightness</span><input type="range" data-look="b" min="60" max="140"></label>
+    <label class="field"><span>Contrast</span><input type="range" data-look="c" min="60" max="150"></label>
+    <label class="field"><span>Saturation</span><input type="range" data-look="s" min="0" max="200"></label>
+    <label class="field"><span>Warmth</span><input type="range" data-look="w" min="-100" max="100"></label>
+    <p class="dim">The look is saved into your recording.</p>
+  </div>
+</aside>
+
+<!-- REVIEW -->
+<section id="review" class="screen">
+  <video id="reviewVideo" controls playsinline></video>
+  <div class="row-gap center">
+    <a id="downloadBtn" class="btn primary" download="Telepromptify-take.webm"><svg><use href="#i-download"/></svg>Save</a>
+    <button id="retakeBtn" class="btn ghost"><svg><use href="#i-restart"/></svg>Retake</button>
+    <button id="reviewEditBtn" class="btn ghost"><svg><use href="#i-edit"/></svg>Script</button>
+  </div>
+</section>
+
+<dialog id="notice">
+  <h2>Your data stays with you</h2>
+  <p>Telepromptify saves your script and settings on this device only. Recordings are never uploaded. Camera and microphone are used only while you are on the teleprompter screen. No accounts, no ads, no tracking.</p>
+  <p><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
+  <button id="noticeOk" class="btn primary">Got it</button>
+</dialog>
+
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

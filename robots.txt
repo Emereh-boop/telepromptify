@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://telepromptify.vercel.app/sitemap.xml
